@@ -5,6 +5,8 @@ import { useServices } from '../services'
 
 interface AuthContextValue {
   isAuthenticated: boolean
+  /** Hides admin-only screens from common users; the API refuses their requests anyway (403). */
+  isAdmin: boolean
   login(credentials: Credentials): Promise<void>
   logout(): void
 }
@@ -35,7 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.clear()
   }, [queryClient, sessionExpiry, tokenStorage])
 
-  const value = useMemo(() => ({ isAuthenticated: session !== null, login, logout }), [session, login, logout])
+  const value = useMemo(
+    () => ({ isAuthenticated: session !== null, isAdmin: session?.role === 'Admin', login, logout }),
+    [session, login, logout],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

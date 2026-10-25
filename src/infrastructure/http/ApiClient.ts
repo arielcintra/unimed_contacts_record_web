@@ -110,6 +110,11 @@ function serialize(body: unknown): BodyInit | undefined {
 async function toAppError(response: Response): Promise<AppError> {
   const problem = (await response.json().catch(() => null)) as ProblemDetails | null
   const validationMessage = problem?.errors ? Object.values(problem.errors).flat()[0] : undefined
-  const message = problem?.detail ?? validationMessage ?? problem?.title ?? `Erro ${response.status}.`
+  const message = problem?.detail ?? validationMessage ?? problem?.title ?? fallbackMessage(response.status)
   return new AppError(message, response.status)
+}
+
+// 403 comes from the authorization middleware without a body.
+function fallbackMessage(status: number): string {
+  return status === 403 ? 'Você não tem permissão para realizar esta ação.' : `Erro ${status}.`
 }

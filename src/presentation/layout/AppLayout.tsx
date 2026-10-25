@@ -11,14 +11,16 @@ import { NavLink, Outlet, useLocation } from 'react-router'
 import { useAuth } from '../../application/auth/AuthProvider'
 
 const SECTIONS = [
-  { path: '/contatos', label: 'Contatos' },
-  { path: '/importacoes', label: 'Importações' },
+  { path: '/contatos', label: 'Contatos', adminOnly: false },
+  { path: '/importacoes', label: 'Importações', adminOnly: false },
+  { path: '/usuarios', label: 'Usuários', adminOnly: true },
 ]
 
 export function AppLayout() {
-  const { logout } = useAuth()
+  const { isAdmin, logout } = useAuth()
   const { pathname } = useLocation()
-  const current = SECTIONS.find((section) => pathname.startsWith(section.path))?.path ?? false
+  const sections = SECTIONS.filter((section) => isAdmin || !section.adminOnly)
+  const current = sections.find((section) => pathname.startsWith(section.path))?.path ?? false
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -28,7 +30,7 @@ export function AppLayout() {
             Agenda de Contatos
           </Typography>
           <Tabs value={current} textColor="inherit" indicatorColor="secondary" sx={{ flexGrow: 1 }}>
-            {SECTIONS.map((section) => (
+            {sections.map((section) => (
               <Tab key={section.path} label={section.label} value={section.path} component={NavLink} to={section.path} />
             ))}
           </Tabs>

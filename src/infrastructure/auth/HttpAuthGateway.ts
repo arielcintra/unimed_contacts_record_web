@@ -1,5 +1,6 @@
 import type { AuthGateway } from '../../application/ports/AuthGateway'
 import type { Credentials, Session } from '../../domain/auth/session'
+import type { UserRole } from '../../domain/users/user'
 import type { ApiClient } from '../http/ApiClient'
 import { toDate } from '../http/toDate'
 
@@ -7,6 +8,7 @@ import { toDate } from '../http/toDate'
 interface LoginDto {
   accessToken: string
   expiresAt: string
+  role: UserRole
 }
 
 export class HttpAuthGateway implements AuthGateway {
@@ -18,6 +20,6 @@ export class HttpAuthGateway implements AuthGateway {
 
   async login(credentials: Credentials): Promise<Session> {
     const dto = await this.api.post<LoginDto>('/auth/login', credentials, { authenticated: false })
-    return { accessToken: dto.accessToken, expiresAt: toDate(dto.expiresAt) }
+    return { accessToken: dto.accessToken, expiresAt: toDate(dto.expiresAt), role: dto.role }
   }
 }

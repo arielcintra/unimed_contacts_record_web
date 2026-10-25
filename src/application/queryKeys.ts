@@ -2,4 +2,5 @@
 export const queryKeys = {
   contacts: ['contacts'] as const,
   imports: ['imports'] as const,
+  users: ['users'] as const,
 }

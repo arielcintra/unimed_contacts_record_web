@@ -9,6 +9,7 @@ import { SessionTokenStorage } from './infrastructure/auth/SessionTokenStorage'
 import { HttpContactRepository } from './infrastructure/contacts/HttpContactRepository'
 import { ApiClient } from './infrastructure/http/ApiClient'
 import { HttpImportRepository } from './infrastructure/imports/HttpImportRepository'
+import { HttpUserRepository } from './infrastructure/users/HttpUserRepository'
 import { AppProviders } from './presentation/AppProviders'
 import { router } from './presentation/router'
 
@@ -24,6 +25,7 @@ const api = new ApiClient({
 const services: Services = {
   contacts: new HttpContactRepository(api),
   imports: new HttpImportRepository(api),
+  users: new HttpUserRepository(api),
   auth: new HttpAuthGateway(api),
   tokenStorage,
   sessionExpiry,

@@ -1,6 +1,6 @@
 # Agenda de Contatos — Web
 
-Frontend da Agenda de Contatos: login, consulta de contatos com busca, filtros e paginação, cadastro e edição, inativação/reativação, favoritos e importação de CSV com acompanhamento do processamento. Consome a API REST do repositório [`unimed_contacts_record_api`](../unimed_contacts_record_api).
+Frontend da Agenda de Contatos: login com perfis de acesso (administrador e comum), cadastro de usuários pelo administrador, consulta de contatos com busca, filtros e paginação, cadastro e edição, inativação/reativação, favoritos e importação de CSV com acompanhamento do processamento. Consome a API REST do repositório [`unimed_contacts_record_api`](../unimed_contacts_record_api).
 
 ## Stack
 
@@ -51,6 +51,7 @@ O frontend é construído e iniciado pelo `docker-compose.yml` do repositório d
 | Tela | O que faz |
 |---|---|
 | **Login** | Autenticação com e-mail e senha |
+| **Usuários** (somente administrador) | Busca por e-mail, paginação, cadastro de usuários comuns e edição de e-mail e senha. O administrador aparece na lista sem opção de edição (é definido na configuração da API) |
 | **Contatos** | Busca por nome, e-mail ou telefone (com *debounce*), filtros de status (ativos / inativos / todos) e de favoritos, paginação no servidor, favoritar, inativar/reativar, cadastrar e editar |
 | **Importações** | Envio de CSV, histórico com status e contadores atualizados automaticamente enquanto o arquivo é processado, e detalhes com as linhas não importadas (filtro por inválidas / duplicadas) e os motivos |
 
@@ -66,8 +67,8 @@ infrastructure ──────┘        main.tsx (composition root) liga os 
 
 | Camada | Pasta | Responsabilidade |
 |---|---|---|
-| Domain | `src/domain` | Tipos do domínio (`Contact`, `ContactImport`, `Session`, `Page`) e funções puras de exibição. Sem React e sem HTTP. |
-| Application | `src/application` | **Portas** (`ContactRepository`, `ImportRepository`, `AuthGateway`, `TokenStorage`), casos de uso em hooks (`useContacts`, `useSaveContact`, `useImports`...), estado de autenticação e o contrato de erro `AppError`. |
+| Domain | `src/domain` | Tipos do domínio (`Contact`, `ContactImport`, `User`/`UserRole`, `Session`, `Page`) e funções puras de exibição. Sem React e sem HTTP. |
+| Application | `src/application` | **Portas** (`ContactRepository`, `ImportRepository`, `UserRepository`, `AuthGateway`, `TokenStorage`), casos de uso em hooks (`useContacts`, `useSaveContact`, `useImports`, `useUsers`...), estado de autenticação e o contrato de erro `AppError`. |
 | Infrastructure | `src/infrastructure` | **Adaptadores**: `ApiClient` (fetch), repositórios HTTP, armazenamento do token e conversão dos DTOs da API para o domínio. |
 | Presentation | `src/presentation` | Páginas e componentes MUI, rotas, tema e notificações. |
 
@@ -121,6 +122,12 @@ Detalhes:
 
 O teste `ImportedContactsVisibility.test.tsx` cobre as três situações com as telas reais.
 
+## Perfis de acesso
+
+- O login devolve o perfil do usuário (`Admin` ou `Common`), guardado na sessão junto com o token. Uma sessão salva sem perfil (versão anterior) é descartada e o usuário entra de novo.
+- Para o usuário comum, a aba **Usuários** não aparece, e abrir `/usuarios` direto pela URL redireciona para **Contatos** (`AdminRoute`).
+- Esconder a tela é só conveniência: quem garante a permissão é a API, que responde `403` a um usuário comum. O `ApiClient` mostra essa resposta como "Você não tem permissão para realizar esta ação."
+
 ## Sessão expirada sem perda de dados
 
 O token da API vale 60 minutos (configurável na API) e não há *refresh token*. Para que o usuário não perca o que está fazendo quando ele expira:
@@ -162,7 +169,7 @@ npm test
 | Domain | Formatação de telefone; validade da sessão |
 | Application | Coordenação da sessão expirada (um único login para várias requisições, cancelamento); regra de *polling* das importações e detecção de importação concluída |
 | Infrastructure | `ApiClient` (token, query string, ProblemDetails → `AppError`, `401` → novo login → reenvio único); tradução dos filtros e dos verbos HTTP no repositório de contatos; armazenamento do token |
-| Presentation | Login; contatos (listagem, busca com *debounce*, filtros, favoritar, inativar, cadastrar, editar, erro da API mantendo o formulário); importações (upload, erro, detalhes por tipo, falha); **contatos importados aparecendo na tela de contatos** (ao voltar para a aba, ao concluir a importação e durante o processamento); **sessão expirada sem perder os dados do formulário** |
+| Presentation | Login; **perfis de acesso** (aba e rota de usuários só para o administrador); usuários (listagem, busca, cadastrar, editar mantendo a senha, administrador não editável, erro da API); contatos (listagem, busca com *debounce*, filtros, favoritar, inativar, cadastrar, editar, erro da API mantendo o formulário); importações (upload, erro, detalhes por tipo, falha); **contatos importados aparecendo na tela de contatos** (ao voltar para a aba, ao concluir a importação e durante o processamento); **sessão expirada sem perder os dados do formulário** |
 
 Os testes de tela usam todos os providers reais (`AppProviders`) com serviços falsos, sem servidor e sem biblioteca de *mock* de rede: a injeção de dependência já permite substituir os repositórios.
 

@@ -4,15 +4,18 @@ import type { AuthGateway } from '../application/ports/AuthGateway'
 import type { ContactRepository } from '../application/ports/ContactRepository'
 import type { ImportRepository } from '../application/ports/ImportRepository'
 import type { TokenStorage } from '../application/ports/TokenStorage'
+import type { UserRepository } from '../application/ports/UserRepository'
 import type { Services } from '../application/services'
 import type { Session } from '../domain/auth/session'
 import type { Contact } from '../domain/contacts/contact'
 import type { ContactImport } from '../domain/imports/contactImport'
 import type { Page } from '../domain/shared/page'
+import type { User, UserRole } from '../domain/users/user'
 
-export const validSession = (accessToken = 'token'): Session => ({
+export const validSession = (accessToken = 'token', role: UserRole = 'Admin'): Session => ({
   accessToken,
   expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+  role,
 })
 
 export function pageOf<T>(items: T[], totalCount = items.length): Page<T> {
@@ -50,6 +53,16 @@ export function aContactImport(overrides: Partial<ContactImport> = {}): ContactI
   }
 }
 
+export function aUser(overrides: Partial<User> = {}): User {
+  return {
+    id: crypto.randomUUID(),
+    email: 'bia@unimed.local',
+    role: 'Common',
+    createdAt: new Date('2026-10-25T12:00:00Z'),
+    ...overrides,
+  }
+}
+
 export function memoryTokenStorage(initial: Session | null = validSession()): TokenStorage {
   let session = initial
   return {
@@ -81,11 +94,20 @@ export function fakeImportRepository(): ImportRepository {
   }
 }
 
-/** Services with in-memory fakes; the user starts logged in unless tokenStorage says otherwise. */
+export function fakeUserRepository(): UserRepository {
+  return {
+    search: vi.fn<UserRepository['search']>().mockResolvedValue(pageOf([])),
+    create: vi.fn<UserRepository['create']>(),
+    update: vi.fn<UserRepository['update']>(),
+  }
+}
+
+/** Services with in-memory fakes; the user starts logged in as admin unless tokenStorage says otherwise. */
 export function fakeServices(overrides: Partial<Services> = {}): Services {
   return {
     contacts: fakeContactRepository(),
     imports: fakeImportRepository(),
+    users: fakeUserRepository(),
     auth: { login: vi.fn<AuthGateway['login']>().mockResolvedValue(validSession('new-token')) },
     tokenStorage: memoryTokenStorage(),
     sessionExpiry: new SessionExpiry(),

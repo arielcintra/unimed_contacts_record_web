@@ -4,11 +4,13 @@ import type { AuthGateway } from './ports/AuthGateway'
 import type { ContactRepository } from './ports/ContactRepository'
 import type { ImportRepository } from './ports/ImportRepository'
 import type { TokenStorage } from './ports/TokenStorage'
+import type { UserRepository } from './ports/UserRepository'
 
 /** Everything the use cases depend on. Wired with real adapters in main.tsx and with fakes in tests. */
 export interface Services {
   contacts: ContactRepository
   imports: ImportRepository
+  users: UserRepository
   auth: AuthGateway
   tokenStorage: TokenStorage
   sessionExpiry: SessionExpiry

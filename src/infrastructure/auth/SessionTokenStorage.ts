@@ -1,5 +1,6 @@
 import type { TokenStorage } from '../../application/ports/TokenStorage'
 import type { Session } from '../../domain/auth/session'
+import { isUserRole } from '../../domain/users/user'
 
 const STORAGE_KEY = 'contacts-record.session'
 
@@ -19,8 +20,10 @@ export class SessionTokenStorage implements TokenStorage {
     if (!raw) return null
 
     try {
-      const { accessToken, expiresAt } = JSON.parse(raw) as { accessToken: string; expiresAt: string }
-      return { accessToken, expiresAt: new Date(expiresAt) }
+      const { accessToken, expiresAt, role } = JSON.parse(raw) as { accessToken: string; expiresAt: string; role: unknown }
+      // Sessions saved before roles existed have none: the user simply logs in again.
+      if (!isUserRole(role)) throw new Error('Session without a valid role.')
+      return { accessToken, expiresAt: new Date(expiresAt), role }
     } catch {
       this.clear()
       return null
@@ -30,7 +33,11 @@ export class SessionTokenStorage implements TokenStorage {
   save(session: Session): void {
     this.storage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ accessToken: session.accessToken, expiresAt: session.expiresAt.toISOString() }),
+      JSON.stringify({
+        accessToken: session.accessToken,
+        expiresAt: session.expiresAt.toISOString(),
+        role: session.role,
+      }),
     )
   }
 
